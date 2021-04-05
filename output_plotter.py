@@ -1,25 +1,45 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 plt.style.use('ggplot')
 
+
 class plotter:
 
-    def __init__(self):
+    def __init_line(self, x_data, y_data, point_type, alpha, coordinate):
+        if coordinate == 'x':
+            line = self.ax_x.plot(x_data, y_data, alpha)
+        else:
+            line = self.ax_y.plot(x_data, y_data, alpha)
+        return line[0]
+
+    def __init__(self, keypoint, frame_size):
+        self.keypoint = keypoint
         # Containers for the time series
         self.detected_keypoints_x_ts = [[0] for i in range(18+1)]
         self.detected_keypoints_y_ts = [[0] for i in range(18+1)]
         self.detected_keypoints_t_ts = []
 
         plt.ion()
-        self.fig = plt.figure(figsize=(13, 6))
-        self.ax = self.fig.add_subplot(111)
-        self.t0 = 0
+        self.fig, (self.ax_x, self.ax_y) = plt.subplots(1, 2) 
+        self.fig.suptitle('Keypoint: ' + str(self.keypoint), fontsize=16)
+        
+        
+        self.t0 = time.time()
         self.detected_keypoints_t_ts.append(self.t0)
-        self.line1, = self.ax.plot(self.detected_keypoints_t_ts,  self.detected_keypoints_x_ts[17], '-o', alpha=0.8)
-        plt.ylabel('Y Label')
-        plt.title('Title: ')
+        self.line_x_list = [ self.__init_line(self.detected_keypoints_t_ts,  self.detected_keypoints_x_ts[keypoint],'-.', alpha=0.8, coordinate='x') for i in range(18+1)]
+        self.line_y_list = [ self.__init_line(self.detected_keypoints_t_ts,  self.detected_keypoints_y_ts[keypoint],'-.', alpha=0.8, coordinate='y') for i in range(18+1)]
+
+        self.ax_x.set_xlabel('time')
+        self.ax_x.set_title('x')
+        self.ax_x.set_ylim(0, frame_size[0])
+        self.ax_y.set_xlabel('time')
+        self.ax_y.set_title('y')
+        self.ax_y.set_ylim(0, frame_size[1])
         plt.show()
+
+
 
     def plotKeypointsTimeSeries(self, detected_kpts):
 
@@ -31,16 +51,13 @@ class plotter:
             self.detected_keypoints_x_ts[j].append(point[0])
             self.detected_keypoints_y_ts[j].append(point[1])
 
-        self.t0 = self.t0 + 0.1
-        self.detected_keypoints_t_ts.append(self.t0)
-        self.line1.set_data(self.detected_keypoints_t_ts, self.detected_keypoints_y_ts[14])
+        t = time.time() - self.t0 
+        self.detected_keypoints_t_ts.append(t)
+        self.line_x_list[self.keypoint].set_data(self.detected_keypoints_t_ts[1:], self.detected_keypoints_x_ts[self.keypoint][1:])
+        self.ax_x.set_xlim(0, t)
+        self.line_y_list[self.keypoint].set_data(self.detected_keypoints_t_ts[1:], self.detected_keypoints_y_ts[self.keypoint][1:])
+        self.ax_y.set_xlim(0, t)
+          
         
-        y1_data = self.detected_keypoints_y_ts[14]
-        if np.min(y1_data) <= self.line1.axes.get_ylim()[0] or np.max(y1_data) >= self.line1.axes.get_ylim()[1]:
-            plt.ylim([np.min(y1_data)-np.std(y1_data), np.max(y1_data)+np.std(y1_data)])
-        
-        x1_data = self.detected_keypoints_t_ts
-        if np.min(x1_data) <= self.line1.axes.get_xlim()[0] or np.max(x1_data) >= self.line1.axes.get_xlim()[1]:
-            plt.xlim([np.min(x1_data)-np.std(x1_data), np.max(x1_data)+np.std(x1_data)])
         
         plt.pause(0.001)

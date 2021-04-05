@@ -223,7 +223,8 @@ with dai.Device(create_pipeline()) as device:
             return True, np.array(cam_out.get().getData()).reshape((3, 256, 456)).transpose(1, 2, 0).astype(np.uint8)
 
     try:
-        plot_data = plotter()
+        plot_data = plotter(14, frame_size=(456, 256))
+        plot_data2 = plotter(15, frame_size=(456, 256))
         while should_run():
             read_correctly, frame = get_frame()
 
@@ -242,6 +243,7 @@ with dai.Device(create_pipeline()) as device:
             if debug:
                 if keypoints_list is not None and detected_keypoints is not None and personwiseKeypoints is not None:
                     plot_data.plotKeypointsTimeSeries(detected_keypoints)
+                    plot_data2.plotKeypointsTimeSeries(detected_keypoints)
 
                     for i in range(18):
                         for j in range(len(detected_keypoints[i])):
