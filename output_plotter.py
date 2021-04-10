@@ -41,7 +41,7 @@ class openPoseOutputLogger:
         return [fig, ax_x, ax_y]
 
     def __init__(self, keypoint_list = [], frame_size = (200,200)):  
-        """ Constructor of the logger class
+        """ Constructor of the logger class. It will log all the keypoints data into a time series. Presenting the data as to pandas dataframes, one for each image coordinate.
 
         Args:
             keypoint_list (list, optional): List of the keypoints to be ploted. Defaults to [].
@@ -129,10 +129,8 @@ class openPoseOutputLogger:
         # Update visualization        
         [self.__updatePlot(u, v, i) for i in range(len(self.keypoint_list))]
         plt.pause(0.001)
-        
-        self.saveData()
-    
-    def getData():
+            
+    def getData(self):
         """Withdraw the keypoints coordinates data
 
         Returns:

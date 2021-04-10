@@ -239,7 +239,11 @@ with dai.Device(create_pipeline()) as device:
                 (3, 256, 456)).transpose(1, 2, 0).astype(np.uint8)
 
     try:
+        #---------------------------------------------------------------
+        # Initialize the keypoint data logger 
         log_data = openPoseOutputLogger([14, 15], frame_size=(456, 256))
+        #---------------------------------------------------------------
+
         while should_run():
             read_correctly, frame = get_frame()
 
@@ -257,8 +261,21 @@ with dai.Device(create_pipeline()) as device:
 
             if debug:
                 if keypoints_list is not None and detected_keypoints is not None and personwiseKeypoints is not None:
+                    
+                    #---------------------------------------------------------------
                     log_data.updateKeypointTimeSeries(detected_keypoints)
                     log_data.plot()
+                    # Working with the data, using pandas dataframe
+                    u,v = log_data.getData()
+                    # Getting the u coordinates for an specific keypoint:
+                    kp_15_u = u['K_15']
+                    # In case we need it as a numpy array:
+                    kp_15_u = u['K_15'].to_numpy()
+                    print(np.mean(kp_15_u))
+                    # Saving the data into csv files
+                    log_data.saveData('u_data.csv', 'v_data.csv')
+                    #---------------------------------------------------------------
+
                     for i in range(18):
                         for j in range(len(detected_keypoints[i])):
                             cv2.circle(debug_frame,
