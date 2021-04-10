@@ -25,32 +25,26 @@ class openPoseOutputLogger:
             line = self.ax_y_list[keypoint].plot(x_data, y_data, alpha)
         return line[0]
     
-    def __init_figure(self):
-        pass
+    def __init_figure(self, keypoint, frame_size):
+        fig = plt.figure('Keypoint: ' + str(keypoint))
+        ax_x = plt.subplot(1, 2, 1)
+        ax_y = plt.subplot(1, 2, 2)
+        ax_x.set_xlabel('time')
+        ax_x.set_title('u')
+        ax_x.set_ylim(0, frame_size[0])
+        ax_y.set_xlabel('time')
+        ax_y.set_title('v')
+        ax_y.set_ylim(0, frame_size[1])
+
+        return [fig, ax_x, ax_y]
 
     def __init__(self, keypoint_list, frame_size):
         self.keypoint_list = keypoint_list
         plt.ion()
 
-        # Initialize figures for each keypoint
-        self.fig_list = []
-        self.ax_x_list = []
-        self.ax_y_list = []
-
-        for keypoint in self.keypoint_list:
-            fig = plt.figure('Keypoint: ' + str(keypoint))
-            ax_x = plt.subplot(1, 2, 1)
-            ax_y = plt.subplot(1, 2, 2)
-            ax_x.set_xlabel('time')
-            ax_x.set_title('u')
-            ax_x.set_ylim(0, frame_size[0])
-            ax_y.set_xlabel('time')
-            ax_y.set_title('v')
-            ax_y.set_ylim(0, frame_size[1])
-            self.fig_list.append(fig)
-            self.ax_x_list.append(ax_x)
-            self.ax_y_list.append(ax_y)
-                      
+        # Initialize figures and axis for each keypoint
+        self.fig_list, self.ax_x_list , self.ax_y_list  = zip(*[ self.__init_figure(keypoint, frame_size) for keypoint in self.keypoint_list])
+                         
         self.t0 = time.time()
 
         data = [self.t0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0,0,0, 0]
@@ -83,18 +77,12 @@ class openPoseOutputLogger:
         data_v = [t] 
         [ self.__updateAuxiliary(data_u, data_v, detected_kpts[i]) for i in range(len(detected_kpts))]
 
-        print('Data u' + str(len(data_u)))
-        print(data_u)
         self.kpt_u.append(data_u)
-        print('Data kpt_u' + str(len(self.kpt_u)))
-        print(self.kpt_u)
         self.kpt_v.append(data_v)
 
     def plot(self):       
 
-        # Add time to time series
-        t = time.time() - self.t0 
-
+        # Convert data to pandas dataframe
         u = pd.DataFrame(self.kpt_u, columns=['t', 'K_0', 'K_1', 'K_2', 'K_3', 'K_4', 'K_5', 'K_6', 'K_7', 'K_8', 'K_9', 'K_10', 'K_11', 'K_12', 'K_13', 'K_14', 'K_15', 'K_16', 'K_17'])
         v = pd.DataFrame(self.kpt_v, columns=['t', 'K_0', 'K_1', 'K_2', 'K_3', 'K_4', 'K_5', 'K_6', 'K_7', 'K_8', 'K_9', 'K_10', 'K_11', 'K_12', 'K_13', 'K_14', 'K_15', 'K_16', 'K_17'])
 
@@ -105,16 +93,13 @@ class openPoseOutputLogger:
             # Keypoint x coordinate data
             y_axis_data = u['K_'+str(i)].tolist()[1:]
             self.line_x_list[i].set_data(x_axis_data, y_axis_data)
-            self.ax_x_list[i].set_xlim(0, t)
+            self.ax_x_list[i].set_xlim(0, time.time() - self.t0)
             # Keypoint y coordinate data
             y_axis_data = v['K_'+str(i)].tolist()[1:]
             self.line_y_list[i].set_data(x_axis_data,y_axis_data)
-            self.ax_y_list[i].set_xlim(0, t)            
+            self.ax_y_list[i].set_xlim(0, time.time() - self.t0)            
         plt.pause(0.001)
         self.saveData()
 
     def saveData(self):
-        print("Saving data")
-        #column_values =  [pd.Series(u) for u in self.detected_keypoints_u_ts]
-        #column_values.to_csv('test.csv')
-        #    
+        pass
