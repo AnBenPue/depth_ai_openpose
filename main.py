@@ -241,7 +241,7 @@ with dai.Device(create_pipeline()) as device:
     try:
         #---------------------------------------------------------------
         # Initialize the keypoint data logger 
-        log_data = openPoseOutputLogger([14, 15], frame_size=(456, 256))
+        log_data = openPoseOutputLogger([14], frame_size=(456, 256))
         #---------------------------------------------------------------
 
         while should_run():
@@ -271,7 +271,7 @@ with dai.Device(create_pipeline()) as device:
                     kp_15_u = uv_data['K_15_u']
                     # In case we need it as a numpy array:
                     kp_15_u = uv_data['K_15_u'].to_numpy()
-                    print(uv_data.head)
+                    #sprint(uv_data.head)
                     #print(np.mean(kp_15_u))
                     # Saving the data into csv files
                     log_data.saveData('uv_data.csv')
