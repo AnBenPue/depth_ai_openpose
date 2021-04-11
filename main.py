@@ -266,14 +266,15 @@ with dai.Device(create_pipeline()) as device:
                     log_data.updateKeypointTimeSeries(detected_keypoints)
                     log_data.plot()
                     # Working with the data, using pandas dataframe
-                    u,v = log_data.getData()
+                    uv_data = log_data.getData()
                     # Getting the u coordinates for an specific keypoint:
-                    kp_15_u = u['K_15']
+                    kp_15_u = uv_data['K_15_u']
                     # In case we need it as a numpy array:
-                    kp_15_u = u['K_15'].to_numpy()
-                    print(np.mean(kp_15_u))
+                    kp_15_u = uv_data['K_15_u'].to_numpy()
+                    print(uv_data.head)
+                    #print(np.mean(kp_15_u))
                     # Saving the data into csv files
-                    log_data.saveData('u_data.csv', 'v_data.csv')
+                    log_data.saveData('uv_data.csv')
                     #---------------------------------------------------------------
 
                     for i in range(18):

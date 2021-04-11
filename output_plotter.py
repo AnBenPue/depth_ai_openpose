@@ -53,19 +53,19 @@ class openPoseOutputLogger:
         plt.ion()
         self.fig_list, self.ax_x_list , self.ax_y_list  = zip(*[ self.__init_figure(keypoint, frame_size) for keypoint in self.keypoint_list])
         self.line_x_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
+        self.line_x_fod_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
+        self.line_x_sod_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
         self.line_y_list, _ = zip(*[ self.ax_y_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
 
         # Containers for the time series data for the u and v coordinates of the keypoints
         self.t0 = time.time()
-        self.kpt_u = []
-        self.kpt_v = []
+        self.kpt_uv_data = []
 
-    def __updateAuxiliary(self, data_u, data_v, kpts_data):
+    def __updateAuxiliary(self, data_uv, kpts_data):
         """[summary]
 
         Args:
-            data_u (list): List containing the u coordinate data for the keypoints during one timestep
-            data_v (list): List containing the v coordinate data for the keypoints during one timestep
+            data_uv (list): List containing the u and v coordinates data for the keypoints during one timestep
             kpts_data (list): keypoint data to be added to the lists
         """
 
@@ -74,8 +74,8 @@ class openPoseOutputLogger:
         else:
             point = [kpts_data[0][0], kpts_data[0][1]]
         
-        data_u.append(point[0])
-        data_v.append(point[1])
+        data_uv.append(point[0])
+        data_uv.append(point[1])
 
 
     def updateKeypointTimeSeries(self, detected_kpts):
@@ -86,13 +86,11 @@ class openPoseOutputLogger:
         """
         # Create list for the current keypoints data
         t = time.time() - self.t0 
-        data_u = [t] 
-        data_v = [t] 
-        [ self.__updateAuxiliary(data_u, data_v, detected_kpts[i]) for i in range(len(detected_kpts))]
+        data_uv = [t] 
+        [ self.__updateAuxiliary(data_uv, detected_kpts[i]) for i in range(len(detected_kpts))]
 
         # Add current data to the time series containers
-        self.kpt_u.append(data_u)
-        self.kpt_v.append(data_v)
+        self.kpt_uv_data.append(data_uv)
 
     def __loggedDataToPandas(self):
         """Convert the time series containers to a pandas dataframe.
@@ -101,33 +99,58 @@ class openPoseOutputLogger:
             tuple: pandas dataframe for the u and v coordinates data
         """
         # Convert data to pandas dataframe
-        u = pd.DataFrame(self.kpt_u, columns=['t', 'K_0', 'K_1', 'K_2', 'K_3', 'K_4', 'K_5', 'K_6', 'K_7', 'K_8', 'K_9', 'K_10', 'K_11', 'K_12', 'K_13', 'K_14', 'K_15', 'K_16', 'K_17'])
-        v = pd.DataFrame(self.kpt_v, columns=['t', 'K_0', 'K_1', 'K_2', 'K_3', 'K_4', 'K_5', 'K_6', 'K_7', 'K_8', 'K_9', 'K_10', 'K_11', 'K_12', 'K_13', 'K_14', 'K_15', 'K_16', 'K_17'])
-        return u,v
+        columns_names = ['t', 'K_0_u', 'K_0_v', 
+                              'K_1_u', 'K_1_v',  
+                              'K_2_u', 'K_2_v',
+                              'K_3_u', 'K_3_v', 
+                              'K_4_u', 'K_4_v',
+                              'K_5_u', 'K_5_v',
+                              'K_6_u', 'K_6_v', 
+                              'K_7_u', 'K_7_v', 
+                              'K_8_u', 'K_8_v', 
+                              'K_9_u', 'K_9_v', 
+                              'K_10_u', 'K_10_v', 
+                              'K_11_u', 'K_11_v', 
+                              'K_12_u', 'K_12_v', 
+                              'K_13_u', 'K_13_v', 
+                              'K_14_u', 'K_14_v', 
+                              'K_15_u', 'K_15_v', 
+                              'K_16_u', 'K_16_v', 
+                              'K_17_u', 'K_17_v']
+        uv_data = pd.DataFrame(self.kpt_uv_data, columns=columns_names)
+        return uv_data
 
-    def __updatePlot(self, u, v, selected_kpt_index):
+    def __updatePlot(self, uv_data, selected_kpt_index):
         """Auxiliary function to update the keypoints data plots
 
         Args:
-            u (pandas dataframe): Data for the u coordinate of all the keypoints
-            v (pandas dataframe): Data for the v coordinate of all the keypoints
+            uv_data (pandas dataframe): Data for the u and v coordinates of all the keypoints
             selected_kpt_index (int): [description]
         """
         # u coordinate plot
-        self.line_x_list[selected_kpt_index].set_data(u['t'].tolist(), u['K_'+str(selected_kpt_index)].tolist())
+        self.line_x_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['K_'+str(selected_kpt_index)+'_u'].tolist())
         self.ax_x_list[selected_kpt_index].set_xlim(0, time.time() - self.t0)
         # v coordinate plot
-        self.line_y_list[selected_kpt_index].set_data(u['t'].tolist(), v['K_'+str(selected_kpt_index)].tolist())
+        self.line_y_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['K_'+str(selected_kpt_index)+'_v'].tolist())
         self.ax_y_list[selected_kpt_index].set_xlim(0, time.time() - self.t0)         
 
     def plot(self):   
         """Graph the data for the u and v coordinates of the selected keypoints
         """
         # Get u and v coordinates data for all the keypoints
-        u,v = self.__loggedDataToPandas()        
+        uv_data = self.__loggedDataToPandas()        
       
         # Update visualization        
-        [self.__updatePlot(u, v, i) for i in range(len(self.keypoint_list))]
+        [self.__updatePlot(uv_data, i) for i in range(len(self.keypoint_list))]
+
+        selected_kpt_index =  1
+        uv_data['fod_K_'+str(selected_kpt_index)+'_u'] = uv_data['K_'+str(selected_kpt_index)+'_u'].diff()
+        uv_data['sod_K_'+str(selected_kpt_index)+'_u'] = uv_data['K_'+str(selected_kpt_index)+'_u'] - 2*uv_data['K_'+str(selected_kpt_index)+'_u'].shift(1) + uv_data['K_'+str(selected_kpt_index)+'_u'].shift(2)
+        uv_data['sod_K_'+str(selected_kpt_index)+'_u'] = uv_data['sod_K_'+str(selected_kpt_index)+'_u']*10
+        self.line_x_fod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['fod_K_'+str(selected_kpt_index)+'_u'].tolist())
+        self.line_x_sod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['sod_K_'+str(selected_kpt_index)+'_u'].tolist())
+
+
         plt.pause(0.001)
             
     def getData(self):
@@ -139,13 +162,12 @@ class openPoseOutputLogger:
         """
         return self.__loggedDataToPandas()
 
-    def saveData(self, u_data_filename, v_data_filename):
+    def saveData(self, u_data_filename):
         """Dump the keypoints coordinates data into a csv file
 
         Args:
             u_data_filename (str): Filename for the .csv file for the u coordinate data
             v_data_filename (str): Filename for the .csv file for the v coordinate data
         """
-        u,v = self.__loggedDataToPandas()   
-        u.to_csv(u_data_filename)
-        v.to_csv(v_data_filename)
+        uv = self.__loggedDataToPandas()   
+        uv.to_csv(u_data_filename)
