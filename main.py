@@ -274,7 +274,7 @@ with dai.Device(create_pipeline()) as device:
                     #sprint(uv_data.head)
                     #print(np.mean(kp_15_u))
                     # Saving the data into csv files
-                    log_data.saveData('uv_data.csv')
+                    #log_data.saveData('uv_data.csv')
                     #---------------------------------------------------------------
 
                     for i in range(18):

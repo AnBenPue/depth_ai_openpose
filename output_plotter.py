@@ -53,13 +53,21 @@ class openPoseOutputLogger:
         plt.ion()
         self.fig_list, self.ax_x_list , self.ax_y_list  = zip(*[ self.__init_figure(keypoint, frame_size) for keypoint in self.keypoint_list])
         self.line_x_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
-        self.line_x_fod_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
-        self.line_x_sod_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
         self.line_y_list, _ = zip(*[ self.ax_y_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
-
+      
         # Containers for the time series data for the u and v coordinates of the keypoints
         self.t0 = time.time()
         self.kpt_data = []
+
+        self.add_derivative_data = False
+        self.add_keypoints_pair_distances_data = True
+
+        if self.add_derivative_data:
+            self.line_x_fod_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
+            self.line_x_sod_list, _ = zip(*[ self.ax_x_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
+            self.line_y_fod_list, _ = zip(*[ self.ax_y_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
+            self.line_y_sod_list, _ = zip(*[ self.ax_y_list[i].plot(0, 0, 0.8) for i in range(len(self.keypoint_list))])
+
 
     def __updateAuxiliary(self, data_uv, kpts_data):
         """[summary]
@@ -132,11 +140,15 @@ class openPoseOutputLogger:
         self.ax_x_list[selected_kpt_index].set_xlim(0, time.time() - self.t0)
         # v coordinate plot
         self.line_y_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['K_'+str(selected_kpt_index)+'_v'].tolist())
-        self.ax_y_list[selected_kpt_index].set_xlim(0, time.time() - self.t0)   
+        self.ax_y_list[selected_kpt_index].set_xlim(0, time.time() - self.t0) 
+  
+        if self.add_derivative_data:
+            self.line_y_fod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['fod_K_'+str(selected_kpt_index)+'_v'].tolist()) 
+            self.line_y_sod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['sod_K_'+str(selected_kpt_index)+'_v'].tolist())       
+            self.line_x_fod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['fod_K_'+str(selected_kpt_index)+'_u'].tolist()) 
+            self.line_x_sod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['sod_K_'+str(selected_kpt_index)+'_u'].tolist())       
 
-        self.line_x_fod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['fod_K_'+str(selected_kpt_index)+'_u'].tolist()) 
-        self.line_x_sod_list[selected_kpt_index].set_data(uv_data['t'].tolist(), uv_data['sod_K_'+str(selected_kpt_index)+'_u'].tolist())       
-
+       
     def plot(self):   
         """Graph the data for the u and v coordinates of the selected keypoints
         """
@@ -152,7 +164,8 @@ class openPoseOutputLogger:
 
         for selected_kpt_index in range(0,18):
             keypoints_data['sod_K_'+str(selected_kpt_index)+'_u'] = keypoints_data['K_'+str(selected_kpt_index)+'_u'] - 2*keypoints_data['K_'+str(selected_kpt_index)+'_u'].shift(1) + keypoints_data['K_'+str(selected_kpt_index)+'_u'].shift(2)
-        
+            keypoints_data['sod_K_'+str(selected_kpt_index)+'_v'] = keypoints_data['K_'+str(selected_kpt_index)+'_v'] - 2*keypoints_data['K_'+str(selected_kpt_index)+'_v'].shift(1) + keypoints_data['K_'+str(selected_kpt_index)+'_v'].shift(2)
+
         return keypoints_data
 
 
@@ -160,8 +173,43 @@ class openPoseOutputLogger:
 
         for selected_kpt_index in range(0,18):
             keypoints_data['fod_K_'+str(selected_kpt_index)+'_u'] = keypoints_data['K_'+str(selected_kpt_index)+'_u'].diff()
+            keypoints_data['fod_K_'+str(selected_kpt_index)+'_v'] = keypoints_data['K_'+str(selected_kpt_index)+'_v'].diff()
         
         return keypoints_data
+
+    def __distanceBetweenKeypoints(self, kpt_1_u, kpt_1_v, kpt_2_u, kpt_2_v):
+        v = (kpt_1_u-kpt_2_u, kpt_1_v-kpt_2_v)
+        d  = np.linalg.norm(v)
+        return d
+
+    def __elbowAngle(self,d_e_w, d_s_w, d_e_s):
+        theta = np.arccos((d_e_w*d_e_w+d_e_s*d_e_s-d_s_w*d_s_w)/(2*d_e_w*d_e_s))
+        return theta*180/np.pi
+
+    def __addKeypointPairDistances(self, keypoints_data):
+        # Compute the distance from the left elbow to the left shoulder
+        keypoints_data['d_le_ls'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_6_u'],row['K_6_v'], row['K_5_u'],row['K_5_v']), axis = 1)
+        # Compute the distance from the right elbow to the right shoulder
+        keypoints_data['d_re_rs'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_3_u'],row['K_3_v'], row['K_2_u'],row['K_2_v']), axis = 1)
+        # Compute the distance from the right elbow to the right wrist
+        keypoints_data['d_re_rw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_3_u'],row['K_3_v'], row['K_4_u'],row['K_4_v']), axis = 1)
+        # Compute the distance from the left elbow to the left wrist
+        keypoints_data['d_le_lw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_6_u'],row['K_6_v'], row['K_7_u'],row['K_7_v']), axis = 1)
+        # Compute the distance from the left shoulder to the left wrist
+        keypoints_data['d_ls_lw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_5_u'],row['K_5_v'], row['K_7_u'],row['K_7_v']), axis = 1)
+        # Compute the distance from the right shoulder to the right wrist
+        keypoints_data['d_rs_rw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_2_u'],row['K_2_v'], row['K_4_u'],row['K_4_v']), axis = 1)
+        # Compute the distance from the right shoulder to the left shoulder
+        keypoints_data['d_rs_ls'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_5_u'],row['K_5_v'], row['K_2_u'],row['K_2_v']), axis = 1)
+        # Angle left elbow
+        keypoints_data['theta_le'] = keypoints_data.apply(lambda row : self.__elbowAngle(row['d_le_lw'], row['d_ls_lw'], row['d_le_ls']), axis = 1)
+        # Angle right elbow 
+        keypoints_data['theta_re'] = keypoints_data.apply(lambda row : self.__elbowAngle(row['d_re_rw'], row['d_rs_rw'], row['d_re_rs']), axis = 1)
+
+        print(keypoints_data['theta_re'])
+        return keypoints_data
+                     
+                     
              
     def getData(self):
         """Withdraw the keypoints coordinates data
@@ -170,8 +218,14 @@ class openPoseOutputLogger:
             (pandas dataframe): Data for the time series of all the keypoints, currently: u,v coordinates
         """
         keypoints_data = self.__loggedDataToPandas()
-        keypoints_data = self.__addFirstOrderDerivatives(keypoints_data)
-        keypoints_data = self.__addSecondOrderDerivatives(keypoints_data)
+
+        if self.add_derivative_data:
+            keypoints_data = self.__addFirstOrderDerivatives(keypoints_data)
+            keypoints_data = self.__addSecondOrderDerivatives(keypoints_data)
+
+        if self.add_keypoints_pair_distances_data:
+            keypoints_data = self.__addKeypointPairDistances(keypoints_data)
+
         return keypoints_data
 
     def saveData(self, u_data_filename):
@@ -181,5 +235,4 @@ class openPoseOutputLogger:
             u_data_filename (str): Filename for the .csv file for the u coordinate data
             v_data_filename (str): Filename for the .csv file for the v coordinate data
         """
-        uv = self.getData()
-        uv.to_csv(u_data_filename)
+        self.getData().to_csv(u_data_filename)
