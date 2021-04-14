@@ -4,6 +4,22 @@ import time
 import pandas as pd
 import copy
 
+
+def distanceBetweenKeypoints(kpt_1_u, kpt_1_v, kpt_2_u, kpt_2_v):
+    v = (kpt_1_u-kpt_2_u, kpt_1_v-kpt_2_v)
+    d  = np.linalg.norm(v)
+    return d
+
+def elbowAngle(d_e_w, d_s_w, d_e_s):
+    theta = np.arccos((d_e_w*d_e_w+d_e_s*d_e_s-d_s_w*d_s_w)/(2*d_e_w*d_e_s))
+    return theta*180/np.pi
+
+def computeAugmentedData(detected_keypoints):
+    
+
+class keypointsDataLogger():
+    def __init__(self):
+
 plt.style.use('ggplot')
 
 # Image plane: The reference frame for the pixel values is situated on the top-left corner
@@ -177,34 +193,25 @@ class openPoseOutputLogger:
         
         return keypoints_data
 
-    def __distanceBetweenKeypoints(self, kpt_1_u, kpt_1_v, kpt_2_u, kpt_2_v):
-        v = (kpt_1_u-kpt_2_u, kpt_1_v-kpt_2_v)
-        d  = np.linalg.norm(v)
-        return d
-
-    def __elbowAngle(self,d_e_w, d_s_w, d_e_s):
-        theta = np.arccos((d_e_w*d_e_w+d_e_s*d_e_s-d_s_w*d_s_w)/(2*d_e_w*d_e_s))
-        return theta*180/np.pi
-
     def __addKeypointPairDistances(self, keypoints_data):
         # Compute the distance from the left elbow to the left shoulder
-        keypoints_data['d_le_ls'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_6_u'],row['K_6_v'], row['K_5_u'],row['K_5_v']), axis = 1)
+        keypoints_data['d_le_ls'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_6_u'],row['K_6_v'], row['K_5_u'],row['K_5_v']), axis = 1)
         # Compute the distance from the right elbow to the right shoulder
-        keypoints_data['d_re_rs'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_3_u'],row['K_3_v'], row['K_2_u'],row['K_2_v']), axis = 1)
+        keypoints_data['d_re_rs'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_3_u'],row['K_3_v'], row['K_2_u'],row['K_2_v']), axis = 1)
         # Compute the distance from the right elbow to the right wrist
-        keypoints_data['d_re_rw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_3_u'],row['K_3_v'], row['K_4_u'],row['K_4_v']), axis = 1)
+        keypoints_data['d_re_rw'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_3_u'],row['K_3_v'], row['K_4_u'],row['K_4_v']), axis = 1)
         # Compute the distance from the left elbow to the left wrist
-        keypoints_data['d_le_lw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_6_u'],row['K_6_v'], row['K_7_u'],row['K_7_v']), axis = 1)
+        keypoints_data['d_le_lw'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_6_u'],row['K_6_v'], row['K_7_u'],row['K_7_v']), axis = 1)
         # Compute the distance from the left shoulder to the left wrist
-        keypoints_data['d_ls_lw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_5_u'],row['K_5_v'], row['K_7_u'],row['K_7_v']), axis = 1)
+        keypoints_data['d_ls_lw'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_5_u'],row['K_5_v'], row['K_7_u'],row['K_7_v']), axis = 1)
         # Compute the distance from the right shoulder to the right wrist
-        keypoints_data['d_rs_rw'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_2_u'],row['K_2_v'], row['K_4_u'],row['K_4_v']), axis = 1)
+        keypoints_data['d_rs_rw'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_2_u'],row['K_2_v'], row['K_4_u'],row['K_4_v']), axis = 1)
         # Compute the distance from the right shoulder to the left shoulder
-        keypoints_data['d_rs_ls'] = keypoints_data.apply(lambda row : self.__distanceBetweenKeypoints(row['K_5_u'],row['K_5_v'], row['K_2_u'],row['K_2_v']), axis = 1)
+        keypoints_data['d_rs_ls'] = keypoints_data.apply(lambda row : distanceBetweenKeypoints(row['K_5_u'],row['K_5_v'], row['K_2_u'],row['K_2_v']), axis = 1)
         # Angle left elbow
-        keypoints_data['theta_le'] = keypoints_data.apply(lambda row : self.__elbowAngle(row['d_le_lw'], row['d_ls_lw'], row['d_le_ls']), axis = 1)
+        keypoints_data['theta_le'] = keypoints_data.apply(lambda row : elbowAngle(row['d_le_lw'], row['d_ls_lw'], row['d_le_ls']), axis = 1)
         # Angle right elbow 
-        keypoints_data['theta_re'] = keypoints_data.apply(lambda row : self.__elbowAngle(row['d_re_rw'], row['d_rs_rw'], row['d_re_rs']), axis = 1)
+        keypoints_data['theta_re'] = keypoints_data.apply(lambda row : elbowAngle(row['d_re_rw'], row['d_rs_rw'], row['d_re_rs']), axis = 1)
 
         print(keypoints_data['theta_re'])
         return keypoints_data

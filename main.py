@@ -214,7 +214,7 @@ def pose_thread(in_queue):
             new_keypoints, new_keypoints_list, newPersonwiseKeypoints)
 
 
-from output_plotter import openPoseOutputLogger
+from keypoint_data_extraction import getKeypointsData
 
 with dai.Device(create_pipeline()) as device:
     print("Starting pipeline...")
@@ -239,11 +239,6 @@ with dai.Device(create_pipeline()) as device:
                 (3, 256, 456)).transpose(1, 2, 0).astype(np.uint8)
 
     try:
-        #---------------------------------------------------------------
-        # Initialize the keypoint data logger 
-        log_data = openPoseOutputLogger([14], frame_size=(456, 256))
-        #---------------------------------------------------------------
-
         while should_run():
             read_correctly, frame = get_frame()
 
@@ -263,18 +258,17 @@ with dai.Device(create_pipeline()) as device:
                 if keypoints_list is not None and detected_keypoints is not None and personwiseKeypoints is not None:
                     
                     #---------------------------------------------------------------
-                    log_data.updateKeypointTimeSeries(detected_keypoints)
-                    log_data.plot()
-                    # Working with the data, using pandas dataframe
-                    uv_data = log_data.getData()
-                    # Getting the u coordinates for an specific keypoint:
-                    kp_15_u = uv_data['K_15_u']
-                    # In case we need it as a numpy array:
-                    kp_15_u = uv_data['K_15_u'].to_numpy()
-                    #sprint(uv_data.head)
-                    #print(np.mean(kp_15_u))
-                    # Saving the data into csv files
-                    #log_data.saveData('uv_data.csv')
+                    # Compute the keypoint data, returns a dictionary with all the variables of interest + keypoints
+                    k_data = getKeypointsData(detected_keypoints)
+                    
+                    # To see what is available in the dictionary
+                    # print(k_data.keys())
+                    # currently: dict_keys(['K_0', 'K_1', 'K_2', 'K_3', 'K_4', 'K_5', 'K_6', 'K_7', 'K_8', 'K_9', 'K_10', 'K_11', 'K_12', 'K_13', 'K_14', 'K_15', 'K_16', 'K_17', 'd_le_ls', 'd_re_rs', 'd_re_rw', 'd_le_lw', 'd_ls_lw', 'd_rs_rw', 'd_rs_ls', 'theta_le', 'theta_re'])
+                    
+                    # Accessing a variable:
+                    angle = k_data['theta_re']
+                    d = k_data['d_re_rs']
+                    print('Got angle: ' + str(angle) + ', and distance: ' + str(d))
                     #---------------------------------------------------------------
 
                     for i in range(18):
